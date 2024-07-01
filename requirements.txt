@@ -1,2 +1,11 @@
-numpy==1.26.4
-pandas<=2.2.0
+numpy
+pandas
+scipy
+matplotlib
+jupyter
+scikit-learn
+chardet
+gdown
+xlsxwriter
+sqlalchemy
+beautifulsoup4
