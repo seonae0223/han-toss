@@ -2,10 +2,14 @@ numpy
 pandas
 scipy
 matplotlib
-jupyter
+jupyterlab
 scikit-learn
 chardet
 gdown
 xlsxwriter
 sqlalchemy
 beautifulsoup4
+seaborn
+streamlit
+pingouin
+plotly
