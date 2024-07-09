@@ -152,7 +152,74 @@ SELECT * FROM payments;
 SELECT *
 FROM 
 	payments
-WHERE amount BETWEEN 10000 AND 50000
-AND paymentDate BETWEEN 2003-06-05 AND 2003-12-31
+WHERE 
+	amount BETWEEN 10000 AND 50000
+	AND paymentDate BETWEEN '2003-05-20' AND '2003-06-05'
+	AND checkNumber LIKE '%JM%'
 ;
 
+
+-- IN 연산자
+SELECT *
+FROM 
+	offices
+WHERE country IN ('USA', 'FRANCE', 'UK');
+;
+
+SELECT *
+FROM 
+	offices
+WHERE country NOT IN ('USA', 'FRANCE', 'UK');
+;
+
+
+/*
+SELECT 필드명
+FROM 테이블명
+WHERE 필드명에 관한 여러 조건식
+*/
+
+-- ORDER BY 절, sort_values(), 정렬
+SELECT *
+FROM orders
+ORDER BY orderNumber ASC -- 오름차순
+;
+
+
+SELECT customerNumber, orderNumber
+FROM orders
+ORDER BY customerNumber ASC -- 오름차순
+;
+
+SELECT customerNumber, orderNumber
+FROM orders
+ORDER BY 1 ASC, 2 DESC -- 첫번째 필드: 오름차순, 두번째 필드 : 내림차순
+;
+
+
+-- GROUP BY와 HAVING
+SELECT * FROM orders;
+SELECT 
+	DISTINCT status -- 중복값 제거
+FROM orders
+;
+
+SELECT 
+	status
+    , COUNT(*) AS "갯수" -- 집계함수
+FROM
+	orders
+GROUP BY
+	status
+HAVING COUNT(*) >= 5
+ORDER BY 2 DESC
+;
+
+SELECT
+	country
+    , city
+	, COUNT(*)
+FROM
+	customers
+GROUP BY country, city
+;
