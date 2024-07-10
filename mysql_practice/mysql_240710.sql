@@ -301,3 +301,82 @@ BY 1) A) A
 WHERE RNK <= 5
 ;
 
+
+-- 재구매율 
+SELECT C.COUNTRY,
+SUBSTR(A.ORDERDATE,1,4) YY,
+COUNT(DISTINCT A.CUSTOMERNUMBER) BU_1,
+COUNT(DISTINCT B.CUSTOMERNUMBER) BU_2,
+COUNT(DISTINCT B.CUSTOMERNUMBER)/COUNT(DISTINCT A.CUSTOMERNUMBER)
+RETENTION_RATE
+FROM CLASSICMODELS.ORDERS A
+LEFT
+JOIN CLASSICMODELS.ORDERS B
+ON A.CUSTOMERNUMBER = B.CUSTOMERNUMBER AND SUBSTR(A.ORDERDATE,1,4)
+= SUBSTR(B.ORDERDATE,1,4)-1
+LEFT
+JOIN CLASSICMODELS.CUSTOMERS C
+ON A.CUSTOMERNUMBER = C.CUSTOMERNUMBER
+GROUP
+BY 1,2
+;
+
+-- 셀프 조인
+SELECT *
+FROM orders A
+LEFT JOIN orders B
+ON A.customernumber = B.customernumber
+	AND substr(A.orderdate, 1, 4) = substr(B.orderdate, 1, 4) -1
+;
+
+
+-- BEST SELLER
+-- 미국 고객의 Retention Rate가 제일 높음 확인
+-- 미국에 집중
+-- 미국의 Top5 차량 모델 추출을 부탁 
+-- 매출이 잘 나온 것
+-- 차량모델별로 매출이 가장 잘 나온 것 Top5
+-- 차량모델별로 매출액 구하기
+SELECT *
+FROM(
+	SELECT
+	* 
+	,ROW_NUMBER() OVER(ORDER BY Sales DESC) RNK
+FROM (
+	SELECT 
+		D.productName
+		, SUM(C.priceeach * C.quantityordered) AS Sales
+	FROM orders A
+	LEFT JOIN customers B
+	ON A.customernumber = B.customernumber
+	LEFT JOIN orderdetails C
+	ON A.ordernumber = C.ordernumber
+	LEFT JOIN products D
+	ON C.productcode = D.productcode
+	WHERE B.country = 'USA'
+	GROUP BY 1
+  ) A 
+) A
+WHERE RNK BETWEEN 1 AND 5
+;
+
+
+/*SELECT 
+	* 
+	,ROW_NUMBER() OVER(ORDER BY Sales DESC) RNK
+FROM (
+	SELECT 
+		D.productName
+		, SUM(C.priceeach * C.quantityordered) AS Sales
+	FROM orders A
+	LEFT JOIN customers B
+	ON A.customernumber = B.customernumber
+	LEFT JOIN orderdetails C
+	ON A.ordernumber = C.ordernumber
+	LEFT JOIN products D
+	ON C.productcode = D.productcode
+	WHERE B.country = 'USA'
+	GROUP BY 1
+) A 
+;
+*/
