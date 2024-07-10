@@ -112,10 +112,192 @@ ORDER BY 1
  
  
 -- 국가별, 도시별 매출액을 구하기(ERD 참고)
-SELECT *
+-- 국가, 도시 
+SELECT 
+	B.country 국가
+    , B.city 도시
+    , SUM(C.priceeach * C.quantityordered) AS 매출
 FROM orders A
 LEFT JOIN customers B
 ON A.customerNumber = B.customernumber
 LEFT JOIN orderdetails C
 ON A.orderNumber = C.orderNumber
+GROUP BY 1, 2
+ORDER BY 1, 2
 ;
+
+
+-- CASE WHEN
+-- 조건문, IF-ELSE를 대신함
+-- 북미 VS 비북미
+/*
+SELECT 
+	CASE WHEN country IN ('USA', 'Canada') THEN 'North America'
+    ELSE 'Others' END country_grp
+FROM customers
+;
+*/
+
+SELECT
+	CASE WHEN country IN ('USA', 'Canada') THEN 'North America'
+    ELSE 'Others' END country_grp
+    , SUM(C.priceeach * C.quantityordered) AS 매출
+FROM orders A
+LEFT JOIN customers B
+ON A.customerNumber = B.customernumber
+LEFT JOIN orderdetails C
+ON A.orderNumber = C.orderNumber
+GROUP BY 1
+ORDER BY 1
+;
+
+USE classicmodels;
+-- p.103 매출 Top5 국가 및 매출
+-- row_number, rank, dense_rank
+
+-- CREATE TABLE CLASSICMODELS.STAT AS
+SELECT C.COUNTRY,
+SUM(PRICEEACH*QUANTITYORDERED) SALES
+FROM CLASSICMODELS.ORDERS A
+LEFT
+JOIN CLASSICMODELS.ORDERDETAILS B
+ON A.ORDERNUMBER = B.ORDERNUMBER
+LEFT
+JOIN CLASSICMODELS.CUSTOMERS C
+ON A.CUSTOMERNUMBER = C.CUSTOMERNUMBER
+GROUP
+BY 1
+ORDER
+BY 2 DESC
+;
+
+SELECT * FROM stat;
+
+/* SELECT 
+	country
+    , sales
+    , DENSE_RANK() OVER(ORDER BY SALES DESC) RNK
+FROM stat
+WHERE RNK BETWEEN 1 AND 5
+; -- 에러가 난다. 
+*/
+
+-- QUERY 실행하는 순서
+-- FROM > WHERE > GROUP BY > HAVING > SELECT > ORDER BY 
+
+-- CREATE TABLE stat_rnk AS
+SELECT 
+	country
+    , sales
+    , DENSE_RANK() OVER(ORDER BY SALES DESC) RNK
+FROM stat
+;
+
+SELECT *
+FROM stat_rnk
+WHERE RNK BETWEEN 1 AND 5
+;
+
+-- USA에 거주하는 직원의 이름을 출력하세요
+SELECT lastName, firstName
+FROM employees A
+LEFT JOIN offices B
+ON A.officecode = B.officecode
+WHERE country = 'USA'
+;
+
+-- 서브쿼리
+SELECT 
+	lastName, firstName
+FROM employees
+WHERE officeCode IN (
+	SELECT officeCode 
+    FROM offices
+	WHERE country = 'USA'
+)
+;
+-- officeCode = 1, 2, 3
+SELECT officeCode
+FROM offices
+WHERE country = 'USA'
+;
+
+
+-- 문제, amount가 최대값인 것을 조회하세요
+-- 조회해야 할 필드명 : customerNumber, checkNumber, amount
+SELECT * FROM payments;
+
+SELECT customerNumber, checkNumber, amount
+FROM payments
+WHERE amount = (SELECT max(amount) FROM payments)
+;
+
+
+-- 테이블 : customers, orders
+-- 문제 : 전체 고객 중에서 주문을 하지 않은 고객을 찾기
+-- 조회해야 할 필드명 : customerName
+-- 메인쿼리 : 고객명 조회 from customers
+-- 서브쿼리 : 주문한 고객, from orders
+
+SELECT customerName 
+FROM customers
+WHERE customerNumber NOT IN (
+	SELECT DISTINCT customerNumber FROM orders
+)
+;
+
+
+-- 인라인 뷰 : FROM 
+
+SELECT
+	ordernumber
+    , COUNT(ordernumber) AS items
+FROM orderdetails
+GROUP BY 1
+;
+
+-- 각 주문건당 위 코드를 기반으로 최소, 최대, 평균을 구하기
+
+SELECT 
+	MIN(items)
+    ,MAX(items)
+    ,AVG(items)
+FROM (
+	SELECT
+		ordernumber
+		, COUNT(ordernumber) AS items
+	FROM orderdetails
+	GROUP BY 1
+) A
+;
+
+-- stat 테이블 저장
+-- stat_rnk 테이블 저장
+SELECT *
+FROM stat_rnk
+WHERE RNK BETWEEN 1 AND 5
+;
+
+
+-- 위 쿼리와 결과는 동일
+-- 인라인 뷰 서브쿼리가 2번 사용 됨
+SELECT *
+FROM
+(SELECT COUNTRY,
+SALES,
+DENSE_RANK() OVER(ORDER BY SALES DESC) RNK
+FROM
+(SELECT C.COUNTRY,
+SUM(PRICEEACH*QUANTITYORDERED) SALES
+FROM CLASSICMODELS.ORDERS A
+LEFT
+JOIN CLASSICMODELS.ORDERDETAILS B
+ON A.ORDERNUMBER = B.ORDERNUMBER
+LEFT
+JOIN CLASSICMODELS.CUSTOMERS C
+ON A.CUSTOMERNUMBER = C.CUSTOMERNUMBER
+GROUP
+BY 1) A) A
+WHERE RNK <= 5
+;
+
