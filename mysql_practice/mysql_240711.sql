@@ -342,13 +342,50 @@ GROUP BY 1; -- 0은 사망/ 1은 생존
 -- 연령별 승객수, 생존자수, 비율 구하기
 
 SELECT 
-	FLOOR(AGE/10) * 10 AS 연령대 -- CAST() 활용하면 형변환 가능 : 문자 -> 숫자, 숫자 -> 문자
+	FLOOR(AGE/10) * 10 AS AGEBAND -- CAST() 활용하면 형변환 가능 : 문자 -> 숫자, 숫자 -> 문자
+    , sex
 	, COUNT(passengerid) AS 승객수
     , SUM(survived) AS 생존자수
     , ROUND(SUM(survived) / COUNT(passengerid), 3) AS 생존률
 FROM titanic
-GROUP BY 1
-ORDER BY 1; -- 0은 사망/ 1은 생존    
+GROUP BY 1, 2
+HAVING sex = 'female'
+ORDER BY 1, 2
+; -- 0은 사망/ 1은 생존    
 
 
+-- AGEBAND 남성의생존율    여성의생존율   두성별의생존율차이
+-- 0        0.594       0.694      
 
+SELECT 
+	A.AGEBAND
+    , A.ratio AS M_RATIO
+    , B.ratio AS F_RATIO
+    , ROUND(B.ratio - A.ratio, 2) AS DIFF
+FROM (
+	SELECT 
+		FLOOR(AGE/10) * 10 AGEBAND 
+		, sex
+		, COUNT(passengerid) AS 승객수
+		, SUM(survived) AS 생존자수
+		, ROUND(SUM(survived) / COUNT(passengerid), 3) AS ratio
+	 FROM titanic
+	 GROUP BY 1, 2
+	 HAVING sex = 'male'
+	 ORDER BY 1, 2
+) A
+LEFT JOIN 
+(
+	SELECT 
+		FLOOR(AGE/10) * 10 AGEBAND 
+		, sex
+		, COUNT(passengerid) AS 승객수
+		, SUM(survived) AS 생존자수
+		, ROUND(SUM(survived) / COUNT(passengerid), 3) AS ratio
+	 FROM titanic
+	 GROUP BY 1, 2
+	 HAVING sex = 'female'
+	 ORDER BY 1, 2
+) B
+ON A.AGEBAND = B.AGEBAND
+;
