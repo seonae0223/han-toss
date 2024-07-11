@@ -148,3 +148,207 @@ HAVING churn_type = 'CHURN'
 -- mydata
 USE mydata;
 SELECT * FROM dataset2;
+
+
+-- 쇼핑몰, 리뷰 데이터
+-- 댓글 분석, 감정 분석
+
+SELECT 
+	`Division Name`
+    , AVG(RATING) AVG_RATE
+FROM dataset2
+GROUP BY 1
+;
+--
+SELECT
+	`Department Name`
+    , AVG(RATING) AVG_RATE
+FROM dataset2
+GROUP BY 1
+;
+-- Trend의 평균 평점이 3.85
+-- 세부적으로 내용을 확인해봅시당.
+-- Department Name이 Trend인 것만 조회
+-- RATING이 3점 이하인 것만 조회
+
+SELECT *
+FROM dataset2
+WHERE `Department Name` = 'Trend' AND rating <=3
+;
+
+
+--
+SELECT 
+	`Department Name`
+    , AVG(RATING) AVG_RATE
+FROM dataset2
+GROUP BY 1
+;
+
+
+SELECT CASE WHEN AGE BETWEEN 0 AND 9 THEN '0009'
+WHEN AGE BETWEEN 10 AND 19 THEN '1019'
+WHEN AGE BETWEEN 20 AND 29 THEN '2029'
+WHEN AGE BETWEEN 30 AND 39 THEN '3039'
+WHEN AGE BETWEEN 40 AND 49 THEN '4049'
+WHEN AGE BETWEEN 50 AND 59 THEN '5059'
+WHEN AGE BETWEEN 60 AND 69 THEN '6069'
+WHEN AGE BETWEEN 70 AND 79 THEN '7079'
+WHEN AGE BETWEEN 80 AND 89 THEN '8089'
+WHEN AGE BETWEEN 90 AND 99 THEN '9099' END AGEBAND,
+AGE
+FROM MYDATA.DATASET2
+WHERE 'DEPARTMENT NAME' = 'Trend'
+AND RATING <= 3
+;
+
+-- 쉽게 하는 방법
+-- 나눗셈을 이용하기 -> 16/10 1, 6, 6을 버린 후 조작을 하면 됨
+-- FLOOR() 함수 사용
+SELECT FLOOR(2.4);
+SELECT 
+	FLOOR(AGE/10) * 10 AS 연령대 -- CAST() 활용하면 형변환 가능 : 문자 -> 숫자, 숫자 -> 문자
+    , AGE
+FROM dataset2;
+
+-- 연령대별 분포 : 평점 3점 이하 리뷰
+
+SELECT 
+	FLOOR(AGE/10) * 10 AS 연령대 -- CAST() 활용하면 형변환 가능 : 문자 -> 숫자, 숫자 -> 문자
+    , COUNT(*) AS CNT
+FROM dataset2
+WHERE `Department Name` = 'Trend' AND rating <=3
+GROUP BY 1
+ORDER BY 2 DESC; -- 30대가 29명/ 40대가 24명 / 50대는 23명
+
+
+-- 50대 3점 이하 Trend 리뷰만 추출
+SELECT 
+	`REVIEW TEXT`,
+	FLOOR(AGE/10) * 10 AS 연령대 -- CAST() 활용하면 형변환 가능 : 문자 -> 숫자, 숫자 -> 문자
+FROM dataset2
+WHERE FLOOR(AGE/10) * 10 = 50 AND`Department Name` = 'Trend' AND rating <=3
+;
+
+
+-- 평점이 낮은 상품의 주요 Complain
+SELECT 
+	`Department Name`
+    , ClothingID
+    , AVG(rating) AVG_RATE
+FROM dataset2
+GROUP BY 1, 2
+;
+
+SELECT *
+	, ROW_NUMBER() OVER(PARTITION BY `Department Name` ORDER BY AVG_RATE) RNK
+FROM(
+	SELECT 
+		`Department Name`
+		, ClothingID
+		, AVG(rating) AVG_RATE
+	FROM dataset2
+	GROUP BY 1, 2
+) A
+;
+
+-- 위 결과를 토대로,
+-- 1-10위 데이터 조회
+-- CREATE TABLE mydata.stat AS
+SELECT *
+FROM(
+	SELECT *
+		, ROW_NUMBER() OVER(PARTITION BY `Department Name` ORDER BY AVG_RATE) RNK
+	FROM(
+		SELECT 
+			`Department Name`
+			, ClothingID
+			, AVG(rating) AVG_RATE
+		FROM dataset2
+		GROUP BY 1, 2
+		) A
+	)A
+WHERE RNK BETWEEN 1 AND 10
+;
+
+
+SELECT ClothingID FROM stat
+WHERE `department name` = 'Bottoms'; -- 불만족 1위-10위인 제품의 불만족 리뷰를 가져오는 것이 포인트
+
+SELECT * FROM dataset2;
+
+-- 문제 Department에서 Bottoms 불만족 1위-10위인 리뷰 텍스트를 가져오세요
+-- 해당 ClothingID에 해당하는 리뷰 텍스트
+-- 메인쿼리 : dataset2에서 review text만 가져오기
+-- 서브쿼리 : stat 테이블에서 department가 bottoms인 clothingID
+SELECT `review text`
+FROM dataset2
+WHERE clothingid IN (
+	SELECT clothingid 
+	FROM stat
+	WHERE `department name` = 'bottoms'
+)
+;
+
+SELECT clothingid 
+FROM stat
+WHERE `department name` = 'bottoms'
+;
+
+--
+SELECT 
+	`REVIEW TEXT`
+    , CASE WHEN `REVIEW TEXT` LIKE '%SIZE%' THEN 1 ELSE 0 END SIZE_YN
+FROM dataset2
+;
+
+-- SIZE가 나온 댓글은 총 몇개일까? 
+SELECT 
+	`REVIEW TEXT`
+    , SUM(CASE WHEN `REVIEW TEXT` LIKE '%SIZE' THEN 1 ELSE 0 END) N_SIZE
+    , COUNT(*)N_TOTAL
+    , SUM(CASE WHEN `REVIEW TEXT` LIKE '%SIZE' THEN 1 ELSE 0 END)/COUNT(*) AS ratio
+FROM dataset2
+;
+
+SELECT SUM(CASE WHEN `REVIEW TEXT` LIKE '%SIZE%' THEN 1 ELSE 0 END ) N_SIZE,
+SUM(CASE WHEN `REVIEW TEXT` LIKE '%LARGE%' THEN 1 ELSE 0 END ) N_LARGE,
+SUM(CASE WHEN `REVIEW TEXT` LIKE '%LOOSE%' THEN 1 ELSE 0 END ) N_LOOSE,
+SUM(CASE WHEN `REVIEW TEXT` LIKE '%SMALL%' THEN 1 ELSE 0 END ) N_SMALL,
+SUM(CASE WHEN `REVIEW TEXT` LIKE '%TIGHT%' THEN 1 ELSE 0 END ) N_TIGHT,
+SUM(1) N_TOTAL
+FROM MYDATA.DATASET2
+;
+
+USE titanic;
+SELECT * FROM titanic;
+
+-- 중복값 유무 확인
+SELECT 
+	COUNT(passengerid) N_PASS
+    , COUNT(DISTINCT passengerid) N_UNIQUE_PASS
+FROM titanic
+;
+
+-- 요일별 생존자 여부 집계
+SELECT
+	sex
+	, COUNT(passengerid) AS 승객수
+    , SUM(survived) AS 생존자수
+    , ROUND(SUM(survived) / COUNT(passengerid), 3) AS 생존률
+FROM titanic
+GROUP BY 1; -- 0은 사망/ 1은 생존
+
+-- 연령별 승객수, 생존자수, 비율 구하기
+
+SELECT 
+	FLOOR(AGE/10) * 10 AS 연령대 -- CAST() 활용하면 형변환 가능 : 문자 -> 숫자, 숫자 -> 문자
+	, COUNT(passengerid) AS 승객수
+    , SUM(survived) AS 생존자수
+    , ROUND(SUM(survived) / COUNT(passengerid), 3) AS 생존률
+FROM titanic
+GROUP BY 1
+ORDER BY 1; -- 0은 사망/ 1은 생존    
+
+
+
