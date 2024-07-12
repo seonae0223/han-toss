@@ -389,3 +389,51 @@ LEFT JOIN
 ) B
 ON A.AGEBAND = B.AGEBAND
 ;
+
+
+-- embarked
+-- 승선 항구별 승객 수
+SELECT 
+	embarked AS 승선항구별
+	,COUNT(passengerid) AS 승객수
+FROM titanic
+GROUP BY 1
+;
+
+-- 승선 항구별, 성별 승객 수
+SELECT 
+	embarked AS 승선항구별
+    ,sex AS 성별
+	,COUNT(passengerid) AS 승객수
+FROM titanic
+GROUP BY 1, 2
+ORDER BY 1, 2
+;
+
+-- 승선 항구별, 성별 승객 비중(%)
+SELECT 
+	A.embarked
+    , A.sex
+    , A.승객수
+    , B.승객수
+    , ROUND(A.승객수 / B.승객수, 2) AS ratio
+FROM (
+	SELECT 
+		embarked
+		, sex
+		, COUNT(passengerid) 승객수
+	FROM titanic
+	GROUP BY 1, 2
+	ORDER BY 1, 2
+) A 
+LEFT JOIN (
+	SELECT 
+		embarked
+		, COUNT(passengerid) 승객수
+	FROM titanic
+	GROUP BY 1
+	ORDER BY 1
+) B
+ON A.embarked = B.embarked
+;
+-- 
